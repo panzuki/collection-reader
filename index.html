@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#8B4513">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="コレクションリーダー">
+  <title>コレクションニュースリーダー</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+  <style>
+    /* ===== CSS Variables ===== */
+    :root {
+      --primary: #8B4513;
+      --primary-light: #A0522D;
+      --primary-dark: #5C2E00;
+      --accent: #D4A574;
+      --accent-light: #F5DEB3;
+      --bg: #FDF6EC;
+      --surface: #FFFFFF;
+      --surface2: #FAF0E0;
+      --text: #2C1810;
+      --text-sub: #7A5C4A;
+      --text-mute: #B8967A;
+      --border: #E8D5C0;
+      --shadow: 0 2px 8px rgba(139,69,19,0.12);
+      --shadow-lg: 0 4px 20px rgba(139,69,19,0.18);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --tab-height: 48px;
+      --header-height: 56px;
+      --bottom-height: 60px;
+    }
+
+    /* ===== Reset & Base ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== Header ===== */
+    #header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-height);
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    #header h1 { font-size: 18px; font-weight: 700; flex: 1; }
+    #header-btns { display: flex; gap: 8px; }
+    .hbtn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .hbtn:active { background: rgba(255,255,255,0.35); }
+    .hbtn.icon { padding: 6px 10px; font-size: 18px; }
+
+    /* ===== Collection Tabs ===== */
+    #collection-tabs {
+      position: fixed;
+      top: var(--header-height);
+      left: 0; right: 0;
+      height: var(--tab-height);
+      background: var(--primary-dark);
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      z-index: 99;
+      scrollbar-width: none;
+    }
+    #collection-tabs::-webkit-scrollbar { display: none; }
+    .coll-tab {
+      flex: 0 0 auto;
+      min-width: 100px;
+      padding: 0 16px;
+      color: rgba(255,255,255,0.65);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .coll-tab.active {
+      color: white;
+      border-bottom-color: var(--accent);
+      background: rgba(255,255,255,0.08);
+    }
+    .coll-tab:active { background: rgba(255,255,255,0.15); }
+
+    /* ===== Main Content ===== */
+    #main {
+      margin-top: calc(var(--header-height) + var(--tab-height));
+      margin-bottom: var(--bottom-height);
+      padding: 12px;
+    }
+
+    /* ===== Refresh Bar ===== */
+    .refresh-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    .refresh-info { font-size: 12px; color: var(--text-sub); }
+    .refresh-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .refresh-btn:active { background: var(--primary-dark); }
+    .refresh-btn.loading { opacity: 0.6; pointer-events: none; }
+    .spin { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== Site Card ===== */
+    .site-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .site-card-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      background: linear-gradient(to right, var(--primary-light), var(--primary));
+      color: white;
+      cursor: pointer;
+    }
+    .site-card-header .site-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .site-name { font-size: 14px; font-weight: 700; flex: 1; }
+    .site-count { font-size: 11px; opacity: 0.8; margin-right: 8px; }
+    .site-toggle { font-size: 16px; transition: transform 0.2s; }
+    .site-toggle.collapsed { transform: rotate(-90deg); }
+    .site-card-actions {
+      display: flex;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .site-action-btn {
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .site-action-btn:active { background: var(--accent-light); }
+    .site-action-btn.fetch-btn {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* ===== Article List ===== */
+    .articles-list { list-style: none; }
+    .article-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      gap: 10px;
+    }
+    .article-item:last-child { border-bottom: none; }
+    .article-item:active { background: var(--accent-light); }
+    .article-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      margin-top: 6px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .article-dot.read { background: transparent; border: 1px solid var(--text-mute); }
+    .article-content { flex: 1; min-width: 0; }
+    .article-title {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--text);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .article-title.read { color: var(--text-mute); text-decoration: line-through; }
+    .article-meta {
+      font-size: 11px;
+      color: var(--text-mute);
+      margin-top: 3px;
+    }
+    .article-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .read-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-mute);
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .read-btn:active { background: var(--accent-light); border-color: var(--primary); color: var(--primary); }
+    .article-item.read-hidden { display: none; }
+
+    .show-read-toggle {
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+      cursor: pointer;
+      background: var(--surface2);
+    }
+
+    /* ===== Status Messages ===== */
+    .loading-msg, .empty-msg, .error-msg {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: 13px;
+    }
+    .loading-msg { color: var(--text-sub); }
+    .empty-msg { color: var(--text-mute); }
+    .error-msg { color: #c0392b; }
+    .error-msg small { display: block; font-size: 11px; margin-top: 4px; color: var(--text-mute); }
+
+    /* ===== Bottom Nav ===== */
+    #bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--bottom-height);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-mute);
+      font-size: 10px;
+      transition: color 0.2s;
+    }
+    .nav-btn .nav-icon { font-size: 22px; }
+    .nav-btn.active { color: var(--primary); }
+
+    /* ===== Pages ===== */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ===== Settings Page ===== */
+    #settings-page {
+      margin-top: calc(var(--header-height) + var(--tab-height) + 8px);
+      margin-bottom: var(--bottom-height);
+      padding: 12px;
+    }
+    .settings-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .settings-section-title {
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 14px; }
+    .setting-sub { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+    .toggle-switch {
+      position: relative;
+      width: 44px; height: 24px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: '';
+      width: 18px; height: 18px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    input:checked + .toggle-slider { background: var(--primary); }
+    input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+    /* ===== Config Editor ===== */
+    #config-editor {
+      margin-top: calc(var(--header-height) + var(--tab-height) + 8px);
+      margin-bottom: var(--bottom-height);
+      padding: 12px;
+    }
+    .editor-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .editor-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .editor-btn:active { background: var(--primary-dark); }
+    .editor-btn.secondary {
+      background: var(--surface2);
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+    }
+    .editor-btn.danger {
+      background: #e74c3c;
+    }
+    #config-textarea {
+      width: 100%;
+      min-height: 400px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      background: #1E1E1E;
+      color: #D4D4D4;
+      resize: vertical;
+      outline: none;
+    }
+    #config-textarea:focus { border-color: var(--primary); }
+    .editor-status {
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+    }
+    .editor-status.ok { background: #d4edda; color: #155724; }
+    .editor-status.err { background: #f8d7da; color: #721c24; }
+
+    /* ===== Test/Debug Panel ===== */
+    #test-page {
+      margin-top: calc(var(--header-height) + var(--tab-height) + 8px);
+      margin-bottom: var(--bottom-height);
+      padding: 12px;
+    }
+    .test-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .test-section-title {
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--primary);
+      color: white;
+    }
+    .test-body { padding: 14px; }
+    .test-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .test-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      outline: none;
+      background: var(--bg);
+    }
+    .test-input:focus { border-color: var(--primary); }
+    .test-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+    }
+    .test-run-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .test-run-btn:active { background: var(--primary-dark); }
+    #test-output {
+      background: #1E1E1E;
+      color: #D4D4D4;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .test-result-item {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--primary);
+    }
+    .test-result-item h4 { font-size: 13px; margin-bottom: 4px; }
+    .test-result-item p { font-size: 11px; color: var(--text-sub); }
+    .log-ok { color: #4CAF50; }
+    .log-err { color: #f44336; }
+    .log-info { color: #64B5F6; }
+    .log-warn { color: #FFB74D; }
+
+    /* ===== Toast ===== */
+    #toast {
+      position: fixed;
+      bottom: calc(var(--bottom-height) + 12px);
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(44, 24, 16, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ===== Badge ===== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: var(--primary-dark);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+    .badge.new-badge { background: #e74c3c; color: white; }
+
+    /* ===== Scrollable tabs ===== */
+    .site-tabs-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .site-tabs-bar::-webkit-scrollbar { display: none; }
+    .site-tab-pill {
+      flex: 0 0 auto;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      transition: all 0.2s;
+    }
+    .site-tab-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .site-tab-pill:active { opacity: 0.8; }
+
+    /* ===== Pull to refresh indicator ===== */
+    #ptr-indicator {
+      position: fixed;
+      top: calc(var(--header-height) + var(--tab-height));
+      left: 0; right: 0;
+      height: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-light);
+      transition: height 0.2s;
+      font-size: 13px;
+      color: var(--primary);
+      z-index: 98;
+    }
+    #ptr-indicator.visible { height: 40px; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 360px) {
+      .site-name { font-size: 13px; }
+      .article-title { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header id="header">
+  <h1>📰 コレクションリーダー</h1>
+  <div id="header-btns">
+    <button class="hbtn" onclick="refreshAll()" id="global-refresh-btn">🔄 全更新</button>
+  </div>
+</header>
+
+<!-- Collection Tabs -->
+<nav id="collection-tabs"></nav>
+
+<!-- Pull to Refresh Indicator -->
+<div id="ptr-indicator">↓ 引いて更新</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- PAGE: News -->
+<div id="news-page" class="page active">
+  <div id="main">
+    <div id="news-content">
+      <div class="loading-msg">⏳ 読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: Settings -->
+<div id="settings-page" class="page">
+  <div class="settings-section">
+    <div class="settings-section-title">表示設定</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">既読記事を即非表示</div>
+        <div class="setting-sub">タップした瞬間に隠す</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="auto-hide-toggle" checked onchange="saveSetting('autoHide', this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">取得件数</div>
+        <div class="setting-sub">1サイトあたりの取得記事数</div>
+      </div>
+      <select id="fetch-count-select" onchange="saveSetting('fetchCount', parseInt(this.value))" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:14px;">
+        <option value="5">5件</option>
+        <option value="10">10件</option>
+        <option value="20">20件</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">自動更新間隔</div>
+        <div class="setting-sub">定期的にバックグラウンド取得</div>
+      </div>
+      <select id="auto-refresh-select" onchange="saveSetting('autoRefreshMin', parseInt(this.value))" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:14px;">
+        <option value="0">無効</option>
+        <option value="30">30分</option>
+        <option value="60">1時間</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">CORS プロキシ</div>
+        <div class="setting-sub">RSS取得用プロキシサービス</div>
+      </div>
+      <select id="proxy-select" onchange="saveSetting('proxyMode', this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:13px;max-width:140px;">
+        <option value="rss2json">rss2json.com</option>
+        <option value="allorigins">allorigins.win</option>
+        <option value="corsproxy">corsproxy.io</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">データ管理</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">既読データをリセット</div>
+        <div class="setting-sub">全記事を未読状態に戻す</div>
+      </div>
+      <button class="editor-btn danger" onclick="resetReadData()" style="padding:6px 14px;font-size:12px;">リセット</button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">キャッシュをクリア</div>
+        <div class="setting-sub">取得済み記事データを削除</div>
+      </div>
+      <button class="editor-btn danger" onclick="clearCache()" style="padding:6px 14px;font-size:12px;">クリア</button>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">設定をエクスポート</div>
+        <div class="setting-sub">設定JSONをコピー</div>
+      </div>
+      <button class="editor-btn secondary" onclick="exportConfig()" style="padding:6px 14px;font-size:12px;">コピー</button>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">サイト設定 (config.json)</div>
+    <div style="padding:14px;">
+      <div class="editor-toolbar">
+        <button class="editor-btn" onclick="saveConfig()">💾 保存・適用</button>
+        <button class="editor-btn secondary" onclick="formatJson()">✨ 整形</button>
+        <button class="editor-btn secondary" onclick="resetConfigToDefault()">🔄 デフォルト</button>
+      </div>
+      <textarea id="config-textarea" spellcheck="false" placeholder="設定JSONを入力..."></textarea>
+      <div id="editor-status" class="editor-status" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: Test/Debug -->
+<div id="test-page" class="page">
+  <div class="test-section">
+    <div class="test-section-title">🧪 フィードテスト</div>
+    <div class="test-body">
+      <div class="test-input-row">
+        <input type="url" id="test-url" class="test-input" placeholder="RSSフィードURLを入力" value="">
+        <select id="test-proxy" class="test-select">
+          <option value="rss2json">rss2json</option>
+          <option value="allorigins">allorigins</option>
+          <option value="corsproxy">corsproxy.io</option>
+          <option value="gnews">Google News</option>
+        </select>
+      </div>
+      <div class="test-input-row">
+        <input type="number" id="test-count" class="test-input" placeholder="取得件数" value="5" min="1" max="50" style="max-width:100px;">
+        <button class="test-run-btn" onclick="runFeedTest()">▶ テスト実行</button>
+        <button class="test-run-btn" onclick="clearTestOutput()" style="background:var(--text-sub);">🗑 クリア</button>
+      </div>
+      <div id="test-results"></div>
+      <div id="test-output" style="margin-top:10px;display:none;"></div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-section-title">🌐 Google News RSS ジェネレーター</div>
+    <div class="test-body">
+      <div class="test-input-row">
+        <input type="text" id="gnews-domain" class="test-input" placeholder="ドメイン (例: panews.jp)" value="">
+        <button class="test-run-btn" onclick="generateGNewsURL()">生成</button>
+      </div>
+      <div id="gnews-output" style="background:var(--surface2);padding:10px;border-radius:var(--radius-sm);font-size:12px;word-break:break-all;display:none;"></div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-section-title">📡 全サイト接続確認</div>
+    <div class="test-body">
+      <button class="test-run-btn" onclick="runAllSitesCheck()" style="width:100%;margin-bottom:10px;">全サイトをチェック</button>
+      <div id="all-sites-results"></div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-section-title">📋 ログ</div>
+    <div class="test-body">
+      <button class="test-run-btn" onclick="clearLog()" style="margin-bottom:8px;background:var(--text-sub);">🗑 ログクリア</button>
+      <div id="debug-log" style="background:#1E1E1E;color:#D4D4D4;border-radius:var(--radius-sm);padding:12px;font-family:monospace;font-size:11px;line-height:1.6;max-height:250px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;">ログはここに表示されます...\n</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Navigation -->
+<nav id="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('news')" id="nav-news">
+    <span class="nav-icon">📰</span>
+    <span>ニュース</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('settings')" id="nav-settings">
+    <span class="nav-icon">⚙️</span>
+    <span>設定</span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('test')" id="nav-test">
+    <span class="nav-icon">🧪</span>
+    <span>テスト</span>
+  </button>
+</nav>
+
+<script>
+/* =====================================================
+   コレクションニュースリーダー - Main Application
+   ===================================================== */
+
+/* ---- Default Configuration ---- */
+const DEFAULT_CONFIG = {
+  version: "1.0",
+  collections: [
+    {
+      id: "pan-news",
+      name: "🍞 パンニュース",
+      sites: [
+        {
+          id: "panews",
+          name: "パンニュース",
+          domain: "pan-news.jp",
+          rssUrl: "https://news.google.com/rss/search?q=site:pan-news.jp+パン&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "Google News RSS経由"
+        },
+        {
+          id: "tpan",
+          name: "東洋パン新聞",
+          domain: "toyopan.co.jp",
+          rssUrl: "https://news.google.com/rss/search?q=パン+業界+新商品&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "サンプル - URLを適宜変更"
+        },
+        {
+          id: "bakers",
+          name: "ベーカーズドットネット",
+          domain: "bakers.net",
+          rssUrl: "https://news.google.com/rss/search?q=ベーカリー+業界+ニュース&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "サンプル"
+        },
+        {
+          id: "seipan",
+          name: "製パン情報",
+          domain: "",
+          rssUrl: "https://news.google.com/rss/search?q=製パン+新製品+2025&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "サンプル"
+        }
+      ]
+    },
+    {
+      id: "komeko",
+      name: "🌾 米粉",
+      sites: [
+        {
+          id: "komeko-news",
+          name: "米粉ニュース全般",
+          domain: "",
+          rssUrl: "https://news.google.com/rss/search?q=米粉+ニュース&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "Google News検索"
+        },
+        {
+          id: "komeko-recipe",
+          name: "米粉レシピ情報",
+          domain: "",
+          rssUrl: "https://news.google.com/rss/search?q=米粉+レシピ+新製品&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "サンプル"
+        },
+        {
+          id: "komeko-industry",
+          name: "米粉業界",
+          domain: "",
+          rssUrl: "https://news.google.com/rss/search?q=米粉+産業+農林水産&hl=ja&gl=JP&ceid=JP:ja",
+          type: "gnews",
+          enabled: true,
+          fetchCount: 5,
+          note: "サンプル"
+        }
+      ]
+    }
+  ]
+};
+
+/* ---- App State ---- */
+let appConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+let appSettings = {
+  autoHide: true,
+  fetchCount: 5,
+  autoRefreshMin: 0,
+  proxyMode: 'rss2json'
+};
+let readArticles = {};   // { articleId: true }
+let articleCache = {};   // { siteId: [articles] }
+let currentCollectionId = null;
+let currentPage = 'news';
+let autoRefreshTimer = null;
+let logBuffer = '';
+
+/* ---- Storage Keys ---- */
+const KEYS = {
+  config: 'app_config',
+  settings: 'app_settings',
+  read: 'read_articles',
+  cache: 'article_cache'
+};
+
+/* =====================================================
+   INIT
+   ===================================================== */
+async function init() {
+  log('info', 'アプリ初期化開始');
+  await loadAllData();
+  renderCollectionTabs();
+  renderSettingsUI();
+  loadConfigEditor();
+  setupAutoRefresh();
+  // Select first collection
+  const firstId = appConfig.collections[0]?.id;
+  if (firstId) selectCollection(firstId);
+  log('info', 'アプリ初期化完了');
+}
+
+async function loadAllData() {
+  try {
+    const [cfg, settings, read, cache] = await Promise.all([
+      localforage.getItem(KEYS.config),
+      localforage.getItem(KEYS.settings),
+      localforage.getItem(KEYS.read),
+      localforage.getItem(KEYS.cache)
+    ]);
+    if (cfg) appConfig = cfg;
+    if (settings) appSettings = { ...appSettings, ...settings };
+    if (read) readArticles = read;
+    if (cache) articleCache = cache;
+    log('info', `データ読み込み完了: ${Object.keys(articleCache).length}サイト キャッシュ済み`);
+  } catch (e) {
+    log('err', 'データ読み込みエラー: ' + e.message);
+  }
+}
+
+/* =====================================================
+   COLLECTION TABS
+   ===================================================== */
+function renderCollectionTabs() {
+  const nav = document.getElementById('collection-tabs');
+  nav.innerHTML = appConfig.collections.map(c => `
+    <div class="coll-tab ${c.id === currentCollectionId ? 'active' : ''}"
+         onclick="selectCollection('${c.id}')" data-id="${c.id}">
+      ${c.name}
+    </div>
+  `).join('');
+}
+
+function selectCollection(id) {
+  currentCollectionId = id;
+  document.querySelectorAll('.coll-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.id === id);
+  });
+  renderNewsPage(id);
+}
+
+/* =====================================================
+   NEWS PAGE RENDER
+   ===================================================== */
+function renderNewsPage(collectionId) {
+  const collection = appConfig.collections.find(c => c.id === collectionId);
+  if (!collection) return;
+
+  const container = document.getElementById('news-content');
+  const enabledSites = collection.sites.filter(s => s.enabled !== false);
+
+  if (enabledSites.length === 0) {
+    container.innerHTML = '<div class="empty-msg">📭 このコレクションにサイトがありません<br><small>設定画面でサイトを追加してください</small></div>';
+    return;
+  }
+
+  // Last refresh time
+  const lastRefreshTimes = enabledSites.map(s => {
+    const cached = articleCache[s.id];
+    return cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
+  }).filter(Boolean);
+  const lastRefresh = lastRefreshTimes.length > 0 ?
+    formatRelTime(Math.min(...lastRefreshTimes.map(d => d.getTime()))) : '未取得';
+
+  let html = `
+    <div class="refresh-bar">
+      <div class="refresh-info">最終更新: ${lastRefresh}</div>
+      <button class="refresh-btn" onclick="refreshCollection('${collectionId}')" id="refresh-btn-${collectionId}">
+        🔄 更新
+      </button>
+    </div>
+  `;
+
+  enabledSites.forEach(site => {
+    const cached = articleCache[site.id];
+    const articles = cached?.articles || [];
+    const unreadCount = articles.filter(a => !readArticles[a.id]).length;
+
+    html += `
+      <div class="site-card" id="card-${site.id}">
+        <div class="site-card-header" onclick="toggleSiteCard('${site.id}')">
+          <div class="site-icon">📄</div>
+          <div class="site-name">${escHtml(site.name)}</div>
+          ${unreadCount > 0 ? `<span class="badge new-badge">${unreadCount}</span>` : ''}
+          <span class="site-toggle" id="toggle-${site.id}">▾</span>
+        </div>
+        <div class="site-card-actions">
+          <button class="site-action-btn fetch-btn" onclick="fetchSite('${site.id}');event.stopPropagation()">
+            ⬇ 新着取得 (${site.fetchCount || appSettings.fetchCount}件)
+          </button>
+          <button class="site-action-btn" onclick="markAllRead('${site.id}');event.stopPropagation()">
+            ✓ 全既読
+          </button>
+          ${site.domain ? `<button class="site-action-btn" onclick="window.open('https://${site.domain}','_blank');event.stopPropagation()">🌐 サイトへ</button>` : ''}
+        </div>
+        <div id="articles-${site.id}">
+          ${renderArticleList(site.id, articles)}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderArticleList(siteId, articles) {
+  if (articles.length === 0) {
+    return '<div class="empty-msg">📭 記事がありません<br><small>「新着取得」ボタンを押してください</small></div>';
+  }
+
+  const visibleArticles = articles.filter(a => !readArticles[a.id] || !appSettings.autoHide);
+  const hiddenCount = articles.filter(a => readArticles[a.id]).length;
+
+  let html = '<ul class="articles-list">';
+  articles.forEach(a => {
+    const isRead = !!readArticles[a.id];
+    const isHidden = isRead && appSettings.autoHide;
+    html += `
+      <li class="article-item ${isHidden ? 'read-hidden' : ''}" id="article-${a.id}"
+          onclick="openArticle('${a.id}', '${escHtml(a.url).replace(/'/g, "\\'")}')">
+        <div class="article-dot ${isRead ? 'read' : ''}"></div>
+        <div class="article-content">
+          <div class="article-title ${isRead ? 'read' : ''}">${escHtml(a.title)}</div>
+          <div class="article-meta">
+            ${formatDate(a.pubDate)}
+            ${a.source ? ` · ${escHtml(a.source)}` : ''}
+          </div>
+        </div>
+        <div class="article-actions">
+          <button class="read-btn" onclick="toggleRead('${siteId}','${a.id}');event.stopPropagation()">
+            ${isRead ? '未読' : '既読'}
+          </button>
+        </div>
+      </li>
+    `;
+  });
+  html += '</ul>';
+
+  if (hiddenCount > 0 && appSettings.autoHide) {
+    html += `<div class="show-read-toggle" onclick="toggleShowRead('${siteId}')">
+      👁 既読 ${hiddenCount}件を表示/非表示
+    </div>`;
+  }
+
+  return html;
+}
+
+function toggleSiteCard(siteId) {
+  const body = document.getElementById('articles-' + siteId);
+  const actions = body?.previousElementSibling;
+  const toggle = document.getElementById('toggle-' + siteId);
+  const isCollapsed = body.style.display === 'none';
+  body.style.display = isCollapsed ? '' : 'none';
+  if (actions) actions.style.display = isCollapsed ? '' : 'none';
+  if (toggle) toggle.classList.toggle('collapsed', !isCollapsed);
+}
+
+function toggleShowRead(siteId) {
+  const articles = document.querySelectorAll(`#articles-${siteId} .read-hidden`);
+  const isHiding = articles[0]?.style.display === 'none' || articles[0]?.style.display === '';
+  articles.forEach(a => {
+    a.style.display = (a.style.display === 'none' || !a.style.display) ? 'flex' : 'none';
+  });
+}
+
+/* =====================================================
+   ARTICLE ACTIONS
+   ===================================================== */
+function openArticle(articleId, url) {
+  if (url && url !== 'undefined') window.open(url, '_blank');
+}
+
+function toggleRead(siteId, articleId) {
+  const wasRead = !!readArticles[articleId];
+  if (wasRead) {
+    delete readArticles[articleId];
+  } else {
+    readArticles[articleId] = Date.now();
+  }
+  localforage.setItem(KEYS.read, readArticles);
+
+  // Update DOM
+  const item = document.getElementById('article-' + articleId);
+  if (item) {
+    const dot = item.querySelector('.article-dot');
+    const title = item.querySelector('.article-title');
+    const btn = item.querySelector('.read-btn');
+    const isNowRead = !wasRead;
+    dot?.classList.toggle('read', isNowRead);
+    title?.classList.toggle('read', isNowRead);
+    if (btn) btn.textContent = isNowRead ? '未読' : '既読';
+    if (isNowRead && appSettings.autoHide) {
+      setTimeout(() => { item.classList.add('read-hidden'); }, 300);
+    } else if (!isNowRead) {
+      item.classList.remove('read-hidden');
+    }
+  }
+
+  // Update badge
+  updateSiteBadge(siteId);
+  showToast(wasRead ? '未読に戻しました' : '既読にしました');
+}
+
+function markAllRead(siteId) {
+  const cached = articleCache[siteId];
+  if (!cached?.articles) return;
+  cached.articles.forEach(a => { readArticles[a.id] = Date.now(); });
+  localforage.setItem(KEYS.read, readArticles);
+
+  const listEl = document.getElementById('articles-' + siteId);
+  if (listEl) {
+    listEl.querySelectorAll('.article-item').forEach(item => {
+      item.querySelector('.article-dot')?.classList.add('read');
+      item.querySelector('.article-title')?.classList.add('read');
+      const btn = item.querySelector('.read-btn');
+      if (btn) btn.textContent = '未読';
+      if (appSettings.autoHide) item.classList.add('read-hidden');
+    });
+  }
+  updateSiteBadge(siteId);
+  showToast('全記事を既読にしました');
+}
+
+function updateSiteBadge(siteId) {
+  const cached = articleCache[siteId];
+  if (!cached?.articles) return;
+  const unread = cached.articles.filter(a => !readArticles[a.id]).length;
+  const header = document.querySelector(`#card-${siteId} .site-card-header`);
+  if (header) {
+    const existingBadge = header.querySelector('.badge');
+    if (existingBadge) existingBadge.remove();
+    if (unread > 0) {
+      const toggle = header.querySelector('.site-toggle');
+      const badge = document.createElement('span');
+      badge.className = 'badge new-badge';
+      badge.textContent = unread;
+      header.insertBefore(badge, toggle);
+    }
+  }
+}
+
+/* =====================================================
+   FETCH ARTICLES
+   ===================================================== */
+async function fetchSite(siteId) {
+  const site = findSiteById(siteId);
+  if (!site) return;
+
+  log('info', `フェッチ開始: ${site.name} (${site.rssUrl})`);
+  const listEl = document.getElementById('articles-' + siteId);
+  if (listEl) listEl.innerHTML = '<div class="loading-msg"><span class="spin">⏳</span> 取得中...</div>';
+
+  try {
+    const count = site.fetchCount || appSettings.fetchCount || 5;
+    const articles = await fetchFeed(site.rssUrl, site.type, count);
+
+    // Merge with existing (keep old, add new at top)
+    const existing = articleCache[siteId]?.articles || [];
+    const existingIds = new Set(existing.map(a => a.id));
+    const newOnes = articles.filter(a => !existingIds.has(a.id));
+
+    const merged = [...newOnes, ...existing];
+    // Keep max 50 items
+    const trimmed = merged.slice(0, 50);
+
+    articleCache[siteId] = {
+      articles: trimmed,
+      fetchedAt: Date.now()
+    };
+    await localforage.setItem(KEYS.cache, articleCache);
+
+    if (listEl) listEl.innerHTML = renderArticleList(siteId, trimmed);
+    log('ok', `${site.name}: ${newOnes.length}件新着, 合計${trimmed.length}件`);
+    showToast(`${site.name}: ${newOnes.length}件の新着`);
+    updateSiteBadge(siteId);
+  } catch (e) {
+    log('err', `${site.name} エラー: ${e.message}`);
+    if (listEl) listEl.innerHTML = `<div class="error-msg">❌ 取得エラー<small>${escHtml(e.message)}</small></div>`;
+  }
+}
+
+async function refreshCollection(collectionId) {
+  const collection = appConfig.collections.find(c => c.id === collectionId);
+  if (!collection) return;
+
+  const btn = document.getElementById(`refresh-btn-${collectionId}`);
+  if (btn) { btn.classList.add('loading'); btn.innerHTML = '<span class="spin">⏳</span> 更新中...'; }
+
+  const enabledSites = collection.sites.filter(s => s.enabled !== false);
+  await Promise.all(enabledSites.map(s => fetchSite(s.id)));
+
+  if (btn) { btn.classList.remove('loading'); btn.innerHTML = '🔄 更新'; }
+  showToast(`${collection.name} を更新しました`);
+
+  // Re-render refresh bar time
+  const refreshInfo = document.querySelector(`#news-content .refresh-info`);
+  if (refreshInfo) refreshInfo.textContent = `最終更新: たった今`;
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('global-refresh-btn');
+  if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+
+  for (const c of appConfig.collections) {
+    for (const s of c.sites.filter(s => s.enabled !== false)) {
+      await fetchSite(s.id);
+    }
+  }
+
+  if (btn) { btn.textContent = '🔄 全更新'; btn.disabled = false; }
+  showToast('全サイトを更新しました');
+  renderNewsPage(currentCollectionId);
+}
+
+/* =====================================================
+   RSS FETCHER
+   ===================================================== */
+async function fetchFeed(rssUrl, type, count = 5) {
+  if (!rssUrl) throw new Error('RSS URLが設定されていません');
+
+  const proxy = appSettings.proxyMode || 'rss2json';
+  let articles = [];
+
+  if (proxy === 'rss2json' || !proxy) {
+    articles = await fetchViaRss2json(rssUrl, count);
+  } else if (proxy === 'allorigins') {
+    articles = await fetchViaAllOrigins(rssUrl, count);
+  } else if (proxy === 'corsproxy') {
+    articles = await fetchViaCorsProxy(rssUrl, count);
+  }
+
+  return articles.slice(0, count);
+}
+
+async function fetchViaRss2json(rssUrl, count) {
+  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=${count}`;
+  const res = await fetch(apiUrl);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.status !== 'ok') throw new Error(data.message || 'rss2json エラー');
+
+  return data.items.map(item => ({
+    id: generateId(item.link || item.title || Math.random()),
+    title: cleanText(item.title),
+    url: item.link,
+    pubDate: item.pubDate,
+    source: data.feed?.title || '',
+    description: cleanText(item.description || item.content || '').substring(0, 200)
+  }));
+}
+
+async function fetchViaAllOrigins(rssUrl, count) {
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return parseRSSXml(data.contents, count);
+}
+
+async function fetchViaCorsProxy(rssUrl, count) {
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(rssUrl)}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  return parseRSSXml(text, count);
+}
+
+function parseRSSXml(xmlText, count) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+  const isAtom = doc.querySelector('feed') !== null;
+  const items = isAtom
+    ? Array.from(doc.querySelectorAll('entry'))
+    : Array.from(doc.querySelectorAll('item'));
+
+  return items.slice(0, count).map(item => {
+    const title = isAtom
+      ? item.querySelector('title')?.textContent
+      : item.querySelector('title')?.textContent;
+    const link = isAtom
+      ? (item.querySelector('link')?.getAttribute('href') || item.querySelector('link')?.textContent)
+      : item.querySelector('link')?.textContent;
+    const pubDate = isAtom
+      ? item.querySelector('updated, published')?.textContent
+      : item.querySelector('pubDate')?.textContent;
+    const source = isAtom
+      ? item.querySelector('source title, feed > title')?.textContent
+      : item.querySelector('source')?.textContent || '';
+
+    return {
+      id: generateId(link || title || Math.random()),
+      title: cleanText(title || '(タイトルなし)'),
+      url: link?.trim() || '',
+      pubDate: pubDate || '',
+      source: cleanText(source),
+      description: cleanText(item.querySelector('description, summary, content')?.textContent || '').substring(0, 200)
+    };
+  });
+}
+
+/* =====================================================
+   HELPER FUNCTIONS
+   ===================================================== */
+function generateId(str) {
+  str = String(str);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return 'a' + Math.abs(hash).toString(36);
+}
+
+function cleanText(str) {
+  if (!str) return '';
+  return str
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return formatRelTime(d.getTime());
+  } catch { return dateStr; }
+}
+
+function formatRelTime(timestamp) {
+  const diff = Date.now() - timestamp;
+  const min = Math.floor(diff / 60000);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+  if (min < 1) return 'たった今';
+  if (min < 60) return `${min}分前`;
+  if (hr < 24) return `${hr}時間前`;
+  if (day < 7) return `${day}日前`;
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function findSiteById(siteId) {
+  for (const c of appConfig.collections) {
+    const site = c.sites.find(s => s.id === siteId);
+    if (site) return site;
+  }
+  return null;
+}
+
+/* =====================================================
+   PAGE SWITCHING
+   ===================================================== */
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  const pageMap = { news: 'news-page', settings: 'settings-page', test: 'test-page' };
+  const navMap = { news: 'nav-news', settings: 'nav-settings', test: 'nav-test' };
+
+  document.getElementById(pageMap[page])?.classList.add('active');
+  document.getElementById(navMap[page])?.classList.add('active');
+
+  if (page === 'settings') {
+    loadConfigEditor();
+    renderSettingsUI();
+  }
+}
+
+/* =====================================================
+   SETTINGS
+   ===================================================== */
+function renderSettingsUI() {
+  const autoHide = document.getElementById('auto-hide-toggle');
+  const fetchCount = document.getElementById('fetch-count-select');
+  const autoRefresh = document.getElementById('auto-refresh-select');
+  const proxySelect = document.getElementById('proxy-select');
+
+  if (autoHide) autoHide.checked = appSettings.autoHide;
+  if (fetchCount) fetchCount.value = appSettings.fetchCount || 5;
+  if (autoRefresh) autoRefresh.value = appSettings.autoRefreshMin || 0;
+  if (proxySelect) proxySelect.value = appSettings.proxyMode || 'rss2json';
+}
+
+async function saveSetting(key, value) {
+  appSettings[key] = value;
+  await localforage.setItem(KEYS.settings, appSettings);
+  showToast('設定を保存しました');
+  if (key === 'autoRefreshMin') setupAutoRefresh();
+}
+
+function setupAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  const min = appSettings.autoRefreshMin || 0;
+  if (min > 0) {
+    autoRefreshTimer = setInterval(() => {
+      if (currentCollectionId) refreshCollection(currentCollectionId);
+    }, min * 60000);
+  }
+}
+
+/* =====================================================
+   CONFIG EDITOR
+   ===================================================== */
+function loadConfigEditor() {
+  const ta = document.getElementById('config-textarea');
+  if (ta) ta.value = JSON.stringify(appConfig, null, 2);
+}
+
+async function saveConfig() {
+  const ta = document.getElementById('config-textarea');
+  const statusEl = document.getElementById('editor-status');
+  try {
+    const newConfig = JSON.parse(ta.value);
+    appConfig = newConfig;
+    await localforage.setItem(KEYS.config, appConfig);
+    renderCollectionTabs();
+    if (currentCollectionId) {
+      const exists = appConfig.collections.find(c => c.id === currentCollectionId);
+      if (!exists) currentCollectionId = appConfig.collections[0]?.id;
+    } else {
+      currentCollectionId = appConfig.collections[0]?.id;
+    }
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.className = 'editor-status ok';
+      statusEl.textContent = '✅ 設定を保存・適用しました';
+    }
+    showToast('設定を適用しました');
+    log('ok', '設定を保存しました');
+  } catch (e) {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.className = 'editor-status err';
+      statusEl.textContent = '❌ JSONエラー: ' + e.message;
+    }
+    log('err', 'JSON解析エラー: ' + e.message);
+  }
+}
+
+function formatJson() {
+  const ta = document.getElementById('config-textarea');
+  try {
+    const obj = JSON.parse(ta.value);
+    ta.value = JSON.stringify(obj, null, 2);
+    showToast('JSONを整形しました');
+  } catch (e) {
+    showToast('JSONエラー: ' + e.message);
+  }
+}
+
+async function resetConfigToDefault() {
+  if (!confirm('設定をデフォルトに戻しますか？')) return;
+  appConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  await localforage.setItem(KEYS.config, appConfig);
+  loadConfigEditor();
+  renderCollectionTabs();
+  showToast('設定をリセットしました');
+}
+
+async function resetReadData() {
+  if (!confirm('全既読データをリセットしますか？')) return;
+  readArticles = {};
+  await localforage.setItem(KEYS.read, readArticles);
+  renderNewsPage(currentCollectionId);
+  showToast('既読データをリセットしました');
+}
+
+async function clearCache() {
+  if (!confirm('記事キャッシュをクリアしますか？')) return;
+  articleCache = {};
+  await localforage.setItem(KEYS.cache, articleCache);
+  renderNewsPage(currentCollectionId);
+  showToast('キャッシュをクリアしました');
+}
+
+async function exportConfig() {
+  const text = JSON.stringify(appConfig, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('設定をクリップボードにコピーしました');
+  } catch {
+    const ta = document.getElementById('config-textarea');
+    if (ta) { ta.select(); document.execCommand('copy'); }
+    showToast('コピーしました');
+  }
+}
+
+/* =====================================================
+   TEST / DEBUG
+   ===================================================== */
+async function runFeedTest() {
+  const url = document.getElementById('test-url').value.trim();
+  const proxy = document.getElementById('test-proxy').value;
+  const count = parseInt(document.getElementById('test-count').value) || 5;
+
+  if (!url) { showToast('URLを入力してください'); return; }
+
+  const resultsEl = document.getElementById('test-results');
+  const outputEl = document.getElementById('test-output');
+  resultsEl.innerHTML = '<div class="loading-msg"><span class="spin">⏳</span> テスト中...</div>';
+  outputEl.style.display = 'none';
+
+  log('info', `テスト実行: ${url} (proxy: ${proxy}, count: ${count})`);
+
+  try {
+    const prevProxy = appSettings.proxyMode;
+    appSettings.proxyMode = proxy;
+
+    const startTime = Date.now();
+    const articles = await fetchFeed(url, 'rss', count);
+    const elapsed = Date.now() - startTime;
+
+    appSettings.proxyMode = prevProxy;
+
+    log('ok', `テスト成功: ${articles.length}件取得 (${elapsed}ms)`);
+
+    let html = `<div style="color:var(--primary);font-weight:bold;margin-bottom:8px;">✅ ${articles.length}件取得 (${elapsed}ms)</div>`;
+    articles.forEach((a, i) => {
+      html += `
+        <div class="test-result-item">
+          <h4>[${i+1}] ${escHtml(a.title)}</h4>
+          <p>🔗 ${escHtml(a.url)}</p>
+          <p>📅 ${escHtml(a.pubDate)}</p>
+          ${a.description ? `<p>📝 ${escHtml(a.description.substring(0,100))}...</p>` : ''}
+        </div>
+      `;
+    });
+    resultsEl.innerHTML = html;
+  } catch (e) {
+    log('err', `テスト失敗: ${e.message}`);
+    resultsEl.innerHTML = `
+      <div class="error-msg">
+        ❌ エラー: ${escHtml(e.message)}
+        <small>別のプロキシを試してください</small>
+      </div>
+    `;
+  }
+}
+
+function clearTestOutput() {
+  document.getElementById('test-results').innerHTML = '';
+  document.getElementById('test-output').style.display = 'none';
+}
+
+function generateGNewsURL() {
+  const domain = document.getElementById('gnews-domain').value.trim();
+  if (!domain) { showToast('ドメインを入力してください'); return; }
+
+  const url = `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=ja&gl=JP&ceid=JP:ja`;
+  const el = document.getElementById('gnews-output');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <strong>生成されたURL:</strong><br>
+    <a href="${escHtml(url)}" target="_blank" style="color:var(--primary);word-break:break-all;">${escHtml(url)}</a>
+    <br><br>
+    <button class="test-run-btn" onclick="document.getElementById('test-url').value='${escHtml(url)}';switchPage('test');" style="margin-right:8px;">テストで試す</button>
+    <button class="test-run-btn" style="background:var(--text-sub);" onclick="navigator.clipboard?.writeText('${escHtml(url)}');showToast('URLをコピー')">URLをコピー</button>
+  `;
+}
+
+async function runAllSitesCheck() {
+  const container = document.getElementById('all-sites-results');
+  container.innerHTML = '<div class="loading-msg"><span class="spin">⏳</span> チェック中...</div>';
+
+  let html = '';
+  for (const c of appConfig.collections) {
+    html += `<div style="font-weight:bold;margin:10px 0 6px;color:var(--primary);">${escHtml(c.name)}</div>`;
+    for (const s of c.sites.filter(s => s.enabled !== false)) {
+      try {
+        const startTime = Date.now();
+        await fetchFeed(s.rssUrl, s.type, 2);
+        const ms = Date.now() - startTime;
+        html += `<div class="test-result-item" style="border-color:#4CAF50;">
+          <h4>✅ ${escHtml(s.name)} (${ms}ms)</h4>
+          <p style="font-size:10px;word-break:break-all;">${escHtml(s.rssUrl)}</p>
+        </div>`;
+        log('ok', `${s.name}: OK (${ms}ms)`);
+      } catch (e) {
+        html += `<div class="test-result-item" style="border-color:#f44336;">
+          <h4>❌ ${escHtml(s.name)}</h4>
+          <p style="color:#f44336;">${escHtml(e.message)}</p>
+          <p style="font-size:10px;word-break:break-all;">${escHtml(s.rssUrl)}</p>
+        </div>`;
+        log('err', `${s.name}: ${e.message}`);
+      }
+    }
+  }
+  container.innerHTML = html;
+}
+
+/* =====================================================
+   LOGGING
+   ===================================================== */
+function log(type, msg) {
+  const time = new Date().toLocaleTimeString('ja-JP');
+  const prefix = { ok: '✅', err: '❌', info: 'ℹ️', warn: '⚠️' }[type] || '•';
+  const line = `[${time}] ${prefix} ${msg}\n`;
+  logBuffer += line;
+
+  const logEl = document.getElementById('debug-log');
+  if (logEl) {
+    logEl.textContent = logBuffer;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  console.log(line.trim());
+}
+
+function clearLog() {
+  logBuffer = '';
+  const logEl = document.getElementById('debug-log');
+  if (logEl) logEl.textContent = 'ログはここに表示されます...\n';
+}
+
+/* =====================================================
+   TOAST
+   ===================================================== */
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+/* =====================================================
+   PWA SERVICE WORKER REGISTRATION
+   ===================================================== */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    log('info', 'Service Worker 登録完了');
+  }).catch(e => {
+    log('warn', 'Service Worker 登録失敗: ' + e.message);
+  });
+}
+
+/* =====================================================
+   STARTUP
+   ===================================================== */
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
