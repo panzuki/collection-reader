@@ -844,14 +844,14 @@ const DEFAULT_CONFIG = {
           note: "Google News経由"
         },
         {
-          id: "pantena",
-          name: "パンテナ",
-          domain: "pantena.jp",
-          rssUrl: "https://news.google.com/rss/search?q=site:pantena.jp&hl=ja&gl=JP&ceid=JP:ja",
-          type: "gnews",
-          enabled: true,
-          fetchCount: 5,
-          note: "Google News経由"
+          "id": "pantena",
+          "name": "パンテナ",
+          "domain": "pantena.jp",
+          "rssUrl": "https://pantena.jp/feed/",
+          "type": "rss",
+          "enabled": true,
+          "fetchCount": 5,
+          "note": "直接フィード取得に改善"
         },
         {
           id: "lee-pan",
@@ -887,11 +887,11 @@ const DEFAULT_CONFIG = {
           id: "hanako-pan",
           name: "Hanako パン",
           domain: "hanako.tokyo",
-          rssUrl: "https://news.google.com/rss/search?q=site:hanako.tokyo+パン&hl=ja&gl=JP&ceid=JP:ja",
-          type: "gnews",
+          rssUrl: "https://hanako.tokyo/feed/",
+          type: "rss",
           enabled: true,
           fetchCount: 5,
-          note: "Google News経由"
+          note: "直接フィード取得に改善"
         },
         {
           id: "panlabo",
@@ -992,6 +992,16 @@ const DEFAULT_CONFIG = {
           enabled: true,
           fetchCount: 5,
           note: "補完検索"
+        },
+        {
+          "id": "asahi-pan",
+          "name": "朝日新聞 and パン",
+          "domain": "www.asahi.com",
+          "rssUrl": "https://news.google.com/rss/search?q=site:asahi.com+パン&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+          "type": "gnews",
+          "enabled": true,
+          "fetchCount": 5,
+          "note": "最新順ソート（scoring=n）を追加"
         }
       ]
     },
@@ -1070,15 +1080,35 @@ const DEFAULT_CONFIG = {
           note: "Google News経由"
         },
         {
-          id: "maff-komeko",
-          name: "農林水産省 米粉",
-          domain: "www.maff.go.jp",
-          rssUrl: "https://news.google.com/rss/search?q=site:maff.go.jp+米粉&hl=ja&gl=JP&ceid=JP:ja",
-          type: "gnews",
-          enabled: true,
-          fetchCount: 5,
-          note: "行政情報"
-        }
+        "id": "maff-komeko",
+        "name": "農林水産省 米粉情報",
+        "domain": "maff.go.jp",
+        "rssUrl": "https://news.google.com/rss/search?q=site:maff.go.jp+米粉&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+        "type": "gnews",
+        "enabled": true,
+        "fetchCount": 5,
+        "note": "最新順ソート（scoring=n）を適用"
+      },
+      {
+        "id": "foods-ch-pan",
+        "name": "フーズチャネル（製パン）",
+        "domain": "foods-ch.com",
+        "rssUrl": "https://news.google.com/rss/search?q=site:foods-ch.com+パン&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+        "type": "gnews",
+        "enabled": true,
+        "fetchCount": 5,
+        "note": "業界トレンド・新素材ニュース"
+      },
+      {
+        "id": "komeko-trend",
+        "name": "米粉・グルテンフリー最新",
+        "domain": "google.com",
+        "rssUrl": "https://news.google.com/rss/search?q=米粉+グルテンフリー&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+        "type": "gnews",
+        "enabled": true,
+        "fetchCount": 5,
+        "note": "全Webサイトから新着を網羅取得"
+      }
       ]
     }
   ]
