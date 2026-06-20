@@ -589,6 +589,142 @@
     }
     #ptr-indicator.visible { height: 40px; }
 
+    /* ===== Check Box ===== */
+    .check-btn {
+      background: transparent;
+      border: 2px solid var(--border);
+      border-radius: 5px;
+      width: 22px; height: 22px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      transition: all 0.2s;
+      margin-top: 2px;
+      color: transparent;
+    }
+    .check-btn.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .check-btn:active { opacity: 0.7; }
+
+    /* ===== Prompt Bar ===== */
+    .prompt-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: linear-gradient(to right, #5C2E00, var(--primary));
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      border: none;
+      cursor: pointer;
+      color: white;
+      box-shadow: var(--shadow-lg);
+      transition: opacity 0.2s;
+    }
+    .prompt-bar:active { opacity: 0.85; }
+    .prompt-bar-left { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+    .prompt-bar-count {
+      background: white;
+      color: var(--primary-dark);
+      border-radius: 12px;
+      padding: 1px 9px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .prompt-bar-hint { font-size: 11px; opacity: 0.8; }
+    .prompt-bar-clear {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .prompt-bar-clear:active { background: rgba(255,255,255,0.4); }
+
+    /* ===== Prompt Modal ===== */
+    #prompt-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(44,24,16,0.6);
+      z-index: 300;
+      align-items: flex-end;
+    }
+    #prompt-modal.open { display: flex; }
+    .prompt-modal-sheet {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.28s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .prompt-modal-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .prompt-modal-title { flex: 1; font-size: 16px; font-weight: 700; color: var(--primary-dark); }
+    .prompt-modal-close {
+      background: var(--surface2);
+      border: none;
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-sub);
+    }
+    .prompt-modal-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+    .prompt-textarea {
+      width: 100%;
+      min-height: 220px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.7;
+      background: var(--surface2);
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', sans-serif;
+    }
+    .prompt-textarea:focus { border-color: var(--primary); }
+    .prompt-copy-btn {
+      width: 100%;
+      margin-top: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .prompt-copy-btn:active { background: var(--primary-dark); }
+    .prompt-copy-btn.copied { background: #27ae60; }
+    .prompt-hint {
+      font-size: 11px;
+      color: var(--text-mute);
+      margin-top: 8px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
     /* ===== Responsive ===== */
     @media (max-width: 360px) {
       .site-name { font-size: 13px; }
@@ -760,6 +896,25 @@
     <div class="test-body">
       <button class="test-run-btn" onclick="clearLog()" style="margin-bottom:8px;background:var(--text-sub);">🗑 ログクリア</button>
       <div id="debug-log" style="background:#1E1E1E;color:#D4D4D4;border-radius:var(--radius-sm);padding:12px;font-family:monospace;font-size:11px;line-height:1.6;max-height:250px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;">ログはここに表示されます...\n</div>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt Modal -->
+<div id="prompt-modal" onclick="closePromptModal(event)">
+  <div class="prompt-modal-sheet">
+    <div class="prompt-modal-header">
+      <div class="prompt-modal-title">📋 AI要約プロンプト</div>
+      <button class="prompt-modal-close" onclick="closePromptModal()">✕</button>
+    </div>
+    <div class="prompt-modal-body">
+      <textarea class="prompt-textarea" id="prompt-textarea" readonly></textarea>
+      <button class="prompt-copy-btn" id="prompt-copy-btn" onclick="copyPromptText()">
+        📋 クリップボードにコピー
+      </button>
+      <div class="prompt-hint">
+        コピー後、ChatGPT・Claude等のAIチャットに貼り付けてください
+      </div>
     </div>
   </div>
 </div>
@@ -1184,6 +1339,7 @@ let appSettings = {
 };
 let readArticles = {};   // { articleId: true }
 let articleCache = {};   // { siteId: [articles] }
+let checkedArticles = {}; // { collectionId: { articleId: {url, title} } }
 let currentCollectionId = null;
 let currentPage = 'news';
 let autoRefreshTimer = null;
@@ -1281,12 +1437,26 @@ function renderNewsPage(collectionId) {
   const lastRefresh = lastRefreshTimes.length > 0 ?
     formatRelTime(Math.min(...lastRefreshTimes.map(d => d.getTime()))) : '未取得';
 
+  const checkedCount = Object.keys(checkedArticles[collectionId] || {}).length;
+
   let html = `
     <div class="refresh-bar">
       <div class="refresh-info">最終更新: ${lastRefresh}</div>
       <button class="refresh-btn" onclick="refreshCollection('${collectionId}')" id="refresh-btn-${collectionId}">
         🔄 更新
       </button>
+    </div>
+    <div id="prompt-bar-${collectionId}" class="prompt-bar" style="${checkedCount === 0 ? 'display:none' : ''}"
+         onclick="openPromptModal('${collectionId}')">
+      <div class="prompt-bar-left">
+        <span>📋</span>
+        <span class="prompt-bar-count" id="checked-count-${collectionId}">${checkedCount}</span>
+        <div>
+          <div>件の記事でプロンプト生成</div>
+          <div class="prompt-bar-hint">タップして確認・コピー</div>
+        </div>
+      </div>
+      <button class="prompt-bar-clear" onclick="clearChecked('${collectionId}');event.stopPropagation()">✕ 解除</button>
     </div>
   `;
 
@@ -1334,9 +1504,15 @@ function renderArticleList(siteId, articles) {
   articles.forEach(a => {
     const isRead = !!readArticles[a.id];
     const isHidden = isRead && appSettings.autoHide;
+    const isChecked = !!(checkedArticles[currentCollectionId] && checkedArticles[currentCollectionId][a.id]);
+    const safeUrl = escHtml(a.url).replace(/'/g, "\\'");
+    const safeTitle = escHtml(a.title).replace(/'/g, "\\'");
     html += `
       <li class="article-item ${isHidden ? 'read-hidden' : ''}" id="article-${a.id}"
-          onclick="openArticle('${a.id}', '${escHtml(a.url).replace(/'/g, "\\'")}')">
+          onclick="openArticle('${a.id}', '${safeUrl}')">
+        <button class="check-btn ${isChecked ? 'checked' : ''}" id="check-${a.id}"
+            onclick="toggleCheck('${a.id}','${safeUrl}','${safeTitle}');event.stopPropagation()"
+            title="AI要約用にチェック">✓</button>
         <div class="article-dot ${isRead ? 'read' : ''}"></div>
         <div class="article-content">
           <div class="article-title ${isRead ? 'read' : ''}">${escHtml(a.title)}</div>
@@ -1456,6 +1632,89 @@ function updateSiteBadge(siteId) {
       header.insertBefore(badge, toggle);
     }
   }
+}
+
+/* =====================================================
+   CHECK & PROMPT FUNCTIONS
+   ===================================================== */
+function toggleCheck(articleId, url, title) {
+  if (!currentCollectionId) return;
+  if (!checkedArticles[currentCollectionId]) checkedArticles[currentCollectionId] = {};
+
+  const col = checkedArticles[currentCollectionId];
+  if (col[articleId]) {
+    delete col[articleId];
+  } else {
+    col[articleId] = { url: url.replace(/\\'/g, "'"), title: title.replace(/\\'/g, "'") };
+  }
+
+  // Update check button DOM
+  const btn = document.getElementById('check-' + articleId);
+  if (btn) btn.classList.toggle('checked', !!col[articleId]);
+
+  // Update prompt bar
+  updatePromptBar(currentCollectionId);
+}
+
+function updatePromptBar(collectionId) {
+  const col = checkedArticles[collectionId] || {};
+  const count = Object.keys(col).length;
+  const bar = document.getElementById('prompt-bar-' + collectionId);
+  const countEl = document.getElementById('checked-count-' + collectionId);
+  if (bar) bar.style.display = count === 0 ? 'none' : '';
+  if (countEl) countEl.textContent = count;
+}
+
+function clearChecked(collectionId) {
+  checkedArticles[collectionId] = {};
+  // Uncheck all visible check buttons
+  document.querySelectorAll('.check-btn.checked').forEach(b => b.classList.remove('checked'));
+  updatePromptBar(collectionId);
+  showToast('チェックを全解除しました');
+}
+
+function openPromptModal(collectionId) {
+  const col = checkedArticles[collectionId] || {};
+  const entries = Object.values(col);
+  if (entries.length === 0) return;
+
+  const urlLines = entries.map(e => e.url).join('\n');
+  const promptText =
+`以下の記事を情報量を落とさずに要約して欲しい。論文の場合は『結論（Conclusion）』と『結果（Results）』を読んで、家庭でのパン作りに応用できる具体的なアイデア（材料の置き換え、温度管理、工程など）を解説して。
+
+${urlLines}`;
+
+  const ta = document.getElementById('prompt-textarea');
+  if (ta) ta.value = promptText;
+
+  const copyBtn = document.getElementById('prompt-copy-btn');
+  if (copyBtn) { copyBtn.textContent = '📋 クリップボードにコピー'; copyBtn.classList.remove('copied'); }
+
+  document.getElementById('prompt-modal').classList.add('open');
+}
+
+function closePromptModal(e) {
+  if (e && e.target !== document.getElementById('prompt-modal')) return;
+  document.getElementById('prompt-modal').classList.remove('open');
+}
+
+async function copyPromptText() {
+  const ta = document.getElementById('prompt-textarea');
+  const btn = document.getElementById('prompt-copy-btn');
+  if (!ta) return;
+  try {
+    await navigator.clipboard.writeText(ta.value);
+  } catch {
+    ta.select();
+    document.execCommand('copy');
+  }
+  btn.textContent = '✅ コピーしました！';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = '📋 クリップボードにコピー';
+    btn.classList.remove('copied');
+  }, 2500);
+  showToast('プロンプトをコピーしました');
 }
 
 /* =====================================================
