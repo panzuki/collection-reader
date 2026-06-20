@@ -1164,15 +1164,16 @@ const DEFAULT_CONFIG = {
       id: "komeko",
       name: "🌾 米粉",
       sites: [
-              {
-        id: "naro-komeko",
+              
+      {
+        id: "naro-komeko-global",
         name: "農研機構（NARO）米粉研究",
         domain: "naro.go.jp",
-        rssUrl: "https://news.google.com/rss/search?q=site:naro.go.jp+(米粉+OR+グルテンフリー)&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+        rssUrl: "https://news.google.com/rss/search?q=site:naro.go.jp+%22%E7%B1%B3%E7%B2%89%22&hl=ja&gl=JP&ceid=JP:ja",
         type: "gnews",
         enabled: true,
         fetchCount: 5,
-        note: "農研機構の米粉・特許・技術マニュアルの新着"
+        note: "Google検索インデックス経由で農研機構の米粉情報を確実に入手"
       },
       {
         id: "jstage-komeko",
