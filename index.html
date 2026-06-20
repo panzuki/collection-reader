@@ -1009,6 +1009,66 @@ const DEFAULT_CONFIG = {
       id: "komeko",
       name: "🌾 米粉",
       sites: [
+              {
+        id: "naro-komeko",
+        name: "農研機構（NARO）米粉研究",
+        domain: "naro.go.jp",
+        rssUrl: "https://news.google.com/rss/search?q=site:naro.go.jp+(米粉+OR+グルテンフリー)&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+        type: "gnews",
+        enabled: true,
+        fetchCount: 5,
+        note: "農研機構の米粉・特許・技術マニュアルの新着"
+      },
+      {
+        id: "jstage-komeko",
+        name: "J-STAGE 国内米粉論文",
+        domain: "jstage.jst.go.jp",
+        rssUrl: "https://news.google.com/rss/search?q=site:jstage.jst.go.jp+(米粉+パン+OR+グルテンフリー)&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
+        type: "gnews",
+        enabled: true,
+        fetchCount: 5,
+        note: "国内学術論文（日本食品科学工学会誌など）の新着検知"
+      },
+      {
+        id: "sciencedirect-rice-bread",
+        name: "ScienceDirect 海外食品科学論文",
+        domain: "sciencedirect.com",
+        rssUrl: "https://news.google.com/rss/search?q=site:sciencedirect.com+%22rice+flour+bread%22+OR+%22rice+bread%22+AND+(gluten-free+OR+rheology)&hl=en&gl=US&ceid=US:en&scoring=n",
+        type: "gnews",
+        enabled: true,
+        fetchCount: 5,
+        note: "Food HydrocolloidsやLWTなどのトップ国際論文の新着（海外Google News経由）"
+      },
+      {
+        id: "google-scholar-pickering",
+        name: "最先端技術（Pickering安定化）",
+        domain: "scholar.google.com",
+        rssUrl: "https://news.google.com/rss/search?q=%22rice+flour%22+AND+%22Pickering+stabilization%22+AND+bread&hl=en&gl=US&ceid=US:en&scoring=n",
+        type: "gnews",
+        enabled: true,
+        fetchCount: 5,
+        note: "増粘剤フリーの気泡安定化メカニズム（Pickering）に関する海外Web新着"
+      },
+      {
+        id: "google-scholar-staling",
+        name: "米粉パン老化抑制・澱粉科学",
+        domain: "scholar.google.com",
+        rssUrl: "https://news.google.com/rss/search?q=%22rice+bread%22+AND+(%22anti-staling%22+OR+%22retrogradation%22)&hl=en&gl=US&ceid=US:en&scoring=n",
+        type: "gnews",
+        enabled: true,
+        fetchCount: 5,
+        note: "米粉パンの硬化防止（老化遅延）技術に関する海外Web新着"
+      },
+              {
+        id: "google-scholar-rice-bread-all",
+        name: "Google Scholar 米粉パン全般論文",
+        domain: "scholar.google.com",
+        rssUrl: "https://news.google.com/rss/search?q=(%22rice+flour+bread%22+OR+%22rice+bread%22+OR+%22gluten-free+rice+bread%22)&hl=en&gl=US&ceid=US:en&scoring=n",
+        type: "gnews",
+        enabled: true,
+        fetchCount: 5,
+        note: "米粉パン全般に関する世界中の論文・研究（Google News経由、最新順）"
+      },
         {
           id: "tokyo-komeko",
           name: "Tokyo 米粉トピックス",
