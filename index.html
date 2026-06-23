@@ -1179,8 +1179,9 @@ const DEFAULT_CONFIG = {
         id: "jstage-komeko",
         name: "J-STAGE 国内米粉論文",
         domain: "jstage.jst.go.jp",
-        rssUrl: "https://news.google.com/rss/search?q=site:jstage.jst.go.jp+(米粉+パン+OR+グルテンフリー)&hl=ja&gl=JP&ceid=JP:ja&scoring=n",
-        type: "gnews",
+        // Google Newsを経由せず、J-STAGEの公式検索RSSへ直接リクエストを投げる形に変更（安定性が激増します）
+        rssUrl: "https://www.jstage.jst.go.jp/result/pdf/-char/ja?globalSearchKey=%E7%B1%B3%E7%B2%89+%E3%83%90%E3%83%B3&repCount=5&fmt=rss",
+        type: "rss", // typeをgnewsから標準のrssに変更可能な場合は変更してください
         enabled: true,
         fetchCount: 5,
         note: "国内学術論文（日本食品科学工学会誌など）の新着検知"
@@ -1189,7 +1190,8 @@ const DEFAULT_CONFIG = {
         id: "sciencedirect-rice-bread",
         name: "ScienceDirect 海外食品科学論文",
         domain: "sciencedirect.com",
-        rssUrl: "https://news.google.com/rss/search?q=site:sciencedirect.com+%22rice+flour+bread%22+OR+%22rice+bread%22+AND+(gluten-free+OR+rheology)&hl=en&gl=US&ceid=US:en&scoring=n",
+        // site:指定と複雑な括弧を廃止。主要ワードを並べる形に簡素化
+        rssUrl: "https://news.google.com/rss/search?q=%22rice+flour+bread%22+gluten-free+rheology&hl=en&gl=US&ceid=US:en&scoring=n",
         type: "gnews",
         enabled: true,
         fetchCount: 5,
@@ -1199,7 +1201,8 @@ const DEFAULT_CONFIG = {
         id: "google-scholar-pickering",
         name: "最先端技術（Pickering安定化）",
         domain: "scholar.google.com",
-        rssUrl: "https://news.google.com/rss/search?q=%22rice+flour%22+AND+%22Pickering+stabilization%22+AND+bread&hl=en&gl=US&ceid=US:en&scoring=n",
+        // 演算子ANDをスペース区切り（デフォルトAND）に変更
+        rssUrl: "https://news.google.com/rss/search?q=%22rice+flour%22+%22Pickering+stabilization%22+bread&hl=en&gl=US&ceid=US:en&scoring=n",
         type: "gnews",
         enabled: true,
         fetchCount: 5,
@@ -1209,22 +1212,25 @@ const DEFAULT_CONFIG = {
         id: "google-scholar-staling",
         name: "米粉パン老化抑制・澱粉科学",
         domain: "scholar.google.com",
-        rssUrl: "https://news.google.com/rss/search?q=%22rice+bread%22+AND+(%22anti-staling%22+OR+%22retrogradation%22)&hl=en&gl=US&ceid=US:en&scoring=n",
+        // 括弧とORを廃止し、最もヒットさせたい「retrogradation（澱粉老化）」に絞ってシンプル化
+        rssUrl: "https://news.google.com/rss/search?q=%22rice+bread%22+retrogradation+anti-staling&hl=en&gl=US&ceid=US:en&scoring=n",
         type: "gnews",
         enabled: true,
         fetchCount: 5,
         note: "米粉パンの硬化防止（老化遅延）技術に関する海外Web新着"
       },
-              {
+      {
         id: "google-scholar-rice-bread-all",
         name: "Google Scholar 米粉パン全般論文",
         domain: "scholar.google.com",
-        rssUrl: "https://news.google.com/rss/search?q=(%22rice+flour+bread%22+OR+%22rice+bread%22+OR+%22gluten-free+rice+bread%22)&hl=en&gl=US&ceid=US:en&scoring=n",
+        // エラーを吐いていた最大の原因である複雑な（OR）を排除。「"rice bread"」のみに絞り、Google側の負荷を下げます
+        rssUrl: "https://news.google.com/rss/search?q=%22rice+bread%22+gluten-free&hl=en&gl=US&ceid=US:en&scoring=n",
         type: "gnews",
         enabled: true,
         fetchCount: 5,
         note: "米粉パン全般に関する世界中の論文・研究（Google News経由、最新順）"
       },
+
         {
           id: "tokyo-komeko",
           name: "Tokyo 米粉トピックス",
